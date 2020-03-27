@@ -34,7 +34,7 @@ def brightness(pixel):
     return 0.2126*R + 0.7152*G + 0.0722*B
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture("test.mp4") # pylint: disable=maybe-no-member
+    cap = cv2.VideoCapture(0) # pylint: disable=maybe-no-member
 
     while cap.isOpened():
         ret, frame = cap.read()
