@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import sdl2
 import sdl2.ext
 
