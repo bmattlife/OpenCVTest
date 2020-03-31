@@ -1,29 +1,28 @@
 import cv2
 import numpy as np
 from display import Display
+from extractor import Extractor
 
-W = 1920//2
-H = 1080//2
+W = 1920//3
+H = 1080//3
 
 disp = Display(W, H)
-
-class FeatureExtractor(object):
-    def __init__(self):
-        orb = cv2.ORB_create(100) # pylint: disable=maybe-no-member
-
-    def extract(self, img):
-        feats = cv2.goodFeaturesToTrack(np.mean(img, axis=2).astype(np.uint8), 3000, qualityLevel=0.01, minDistance=3) # pylint: disable=maybe-no-member 
-        return feats
-
-fe = FeatureExtractor()
+fe = Extractor()
 
 def process_frame(img):
     img = cv2.resize(img, (W,H)) # pylint: disable=maybe-no-member
-    keypoints = fe.extract(img) # collect array of keypoints
+    matches = fe.extract(img) # collect array of features
+    if matches is None:
+        return
 
-    for point in keypoints: # iterate keypoints array
-        u,v = map(lambda n: int(round(n)), point[0]) # extract keypoints coords
-        cv2.circle(img, (u,v), color=(0,255,0), radius=3) # pylint: disable=maybe-no-member
+    for pt1, pt2 in matches: # iterate features array
+        u1,v1 = map(lambda n: int(round(n)), pt1.pt) # extract features coords
+        u2,v2 = map(lambda n: int(round(n)), pt2.pt)
+        #cv2.circle(img, (u1,v1), color=(0,255,0), radius=1) # pylint: disable=maybe-no-member
+        cv2.line(img, (u1, v1), (u2, v2), color=(255,0,0))
+
+    for m in matches:
+        print(m)
 
     disp.draw(img)
 
