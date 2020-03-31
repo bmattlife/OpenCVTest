@@ -2,10 +2,13 @@
 import cv2
 import numpy as np
 
-class Extractor(object):
+from skimage.measure import ransac
+from skimage.transform import FundamentalMatrixTransform
+
+class Extractor():
     def __init__(self):
-        self.orb = cv2.ORB_create(100) # pylint: disable=maybe-no-member
-        self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        self.orb = cv2.ORB_create() # pylint: disable=maybe-no-member
+        self.bf = cv2.BFMatcher(cv2.NORM_HAMMING)
         self.last = None
     def extract(self, img):
         # detection
@@ -15,12 +18,21 @@ class Extractor(object):
         keypoints = [cv2.KeyPoint(x=f[0][0], y=f[0][1], _size=20) for f in feats]
         keypoints, descriptors = self.orb.compute(img, keypoints)
 
-        # matches
-        matches = None
+        # matching
+        ret = []
         if self.last is not None:
-            matches = self.bf.match(descriptors, self.last['descriptors'])
-            matches = zip([keypoints[m.queryIdx] for m in matches], [self.last['keypoints'][m.trainIdx] for m in matches])
+            matches = self.bf.knnMatch(descriptors, self.last['descriptors'], k=2)
+            for m,n in matches:
+                if m.distance < 0.75*n.distance:
+                    kp1 = keypoints[m.queryIdx].pt
+                    kp2 = self.last['keypoints'][m.trainIdx].pt
+                    ret.append((kp1,kp2))
 
+        # filter
+        if len(ret) > 0:
+            ret = np.array(ret)
+            model, inliers = ransac((ret[:, 0], ret[:, 1]), FundamentalMatrixTransform, min_samples=8, residual_threshold=0.01, max_trials=100)
+            
         # return
         self.last = {'keypoints': keypoints, 'descriptors': descriptors}
-        return matches
+        return ret
